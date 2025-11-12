@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react"
 import type { KeyboardEvent } from "react"
 import Image from "next/image"
-import { Loader2, Menu, MessageSquare, Plus, Search, Send, Settings, Sparkles } from "lucide-react"
+import { Calendar, Loader2, Menu, MessageSquare, Plus, Search, Send, Settings, Sparkles, X } from "lucide-react"
+import { format, parse, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, subDays } from "date-fns"
+import { ja } from "date-fns/locale"
 
 type Role = "assistant" | "user"
 
@@ -13,6 +15,7 @@ interface Message {
   content: string
   history?: SimilarCase[]
   schedule?: ScheduleBlock[]
+  shipDate?: string
 }
 
 const INTRO_MESSAGE =
@@ -968,6 +971,7 @@ const buildSimulationResponse = (projectName: string, quantity?: number) => {
     narrative: lines.join("\n"),
     history: simulation.history,
     schedule: simulation.schedule,
+    shipDate: "2025-11-30",
   }
 }
 
@@ -980,6 +984,7 @@ export default function Home() {
   const [inputValue, setInputValue] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
+  const [selectedSchedule, setSelectedSchedule] = useState<{ schedule: ScheduleBlock[]; shipDate?: string; messageId?: string } | null>(null)
   const hasQueuedFollowUp = useRef(false)
   const responseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const chatEndRef = useRef<HTMLDivElement | null>(null)
@@ -1066,6 +1071,7 @@ export default function Home() {
             content: assistantResponse.narrative,
             history: assistantResponse.history,
             schedule: assistantResponse.schedule,
+            shipDate: assistantResponse.shipDate,
           },
         ])
         setIsScanning(false)
@@ -1233,9 +1239,18 @@ export default function Home() {
                     )}
                     {isAssistant && message.schedule && message.schedule.length > 0 && (
                       <div className="w-full rounded-2xl border border-white/35 bg-white/40 p-5 text-base text-white shadow-lg backdrop-blur-lg">
-                        <div className="text-sm font-semibold uppercase tracking-wider text-white">
-                          仮日程プラン
-                        </div>
+                        <button
+                          onClick={() => setSelectedSchedule({ schedule: message.schedule!, shipDate: message.shipDate, messageId: message.id })}
+                          className="w-full text-left"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-semibold uppercase tracking-wider text-white flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              仮日程プラン
+                            </div>
+                            <span className="text-xs text-white/70">クリックしてカレンダー表示</span>
+                          </div>
+                        </button>
                         <div className="mt-4 space-y-3">
                           {message.schedule.map((block) => (
                             <div
@@ -1244,17 +1259,36 @@ export default function Home() {
                             >
                               <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="text-base font-semibold text-white">{block.focus}</div>
-                                <span
-                                  className={`rounded-full px-3 py-1 text-xs font-medium ${
-                                    block.status === "確定"
-                                      ? "bg-emerald-400/40 text-emerald-100"
-                                      : block.status === "調整中"
-                                        ? "bg-amber-400/40 text-amber-100"
-                                        : "bg-rose-400/40 text-rose-100"
-                                  }`}
-                                >
-                                  {block.status}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`rounded-full px-3 py-1 text-xs font-medium ${
+                                      block.status === "確定"
+                                        ? "bg-emerald-400/40 text-emerald-100"
+                                        : block.status === "調整中"
+                                          ? "bg-amber-400/40 text-amber-100"
+                                          : "bg-rose-400/40 text-rose-100"
+                                    }`}
+                                  >
+                                    {block.status}
+                                  </span>
+                                  {block.status !== "確定" && (
+                                    <button
+                                      onClick={() => {
+                                        const updatedSchedule = message.schedule!.map((b) =>
+                                          b.id === block.id ? { ...b, status: "確定" as const } : b
+                                        )
+                                        setMessages((prev) =>
+                                          prev.map((m) =>
+                                            m.id === message.id ? { ...m, schedule: updatedSchedule } : m
+                                          )
+                                        )
+                                      }}
+                                      className="px-3 py-1 text-xs font-medium rounded-full bg-emerald-500/60 hover:bg-emerald-500/80 text-white transition"
+                                    >
+                                      確定
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                               <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-white">
                                 <span>{block.timeFrame}</span>
@@ -1283,18 +1317,18 @@ export default function Home() {
           </div>
 
           {isScanning && (
-            <div className="pointer-events-none absolute bottom-36 right-12 z-30 w-[360px] rounded-3xl border border-cyan-300/60 bg-cyan-500/50 p-6 shadow-2xl backdrop-blur-lg">
+            <div className="pointer-events-none absolute bottom-36 right-12 z-30 w-[360px] rounded-3xl border border-cyan-300/70 bg-cyan-500/75 p-6 shadow-2xl backdrop-blur-lg">
               <div className="flex items-center gap-3">
-                <Loader2 className="h-6 w-6 text-cyan-50 animate-spin" />
+                <Loader2 className="h-6 w-6 text-white animate-spin" />
                 <p className="text-base font-medium text-white">過去の類似案件を調査します</p>
               </div>
               <p className="mt-3 text-sm text-white">
                 コンセプトLT・在庫・製造負荷の履歴を参照して最適な比較指標を抽出中です。
               </p>
               <div className="mt-4 flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-cyan-100/80 animate-bounce" />
-                <span className="h-2 w-2 rounded-full bg-cyan-100/60 animate-bounce" style={{ animationDelay: "0.15s" }} />
-                <span className="h-2 w-2 rounded-full bg-cyan-100/40 animate-bounce" style={{ animationDelay: "0.3s" }} />
+                <span className="h-2 w-2 rounded-full bg-white/90 animate-bounce" />
+                <span className="h-2 w-2 rounded-full bg-white/70 animate-bounce" style={{ animationDelay: "0.15s" }} />
+                <span className="h-2 w-2 rounded-full bg-white/50 animate-bounce" style={{ animationDelay: "0.3s" }} />
               </div>
             </div>
           )}
@@ -1336,6 +1370,261 @@ export default function Home() {
           </div>
         </section>
       </main>
+
+      {/* カレンダーモーダル */}
+      {selectedSchedule && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+          onClick={() => setSelectedSchedule(null)}
+        >
+          <div
+            className="relative w-full max-w-3xl mx-4 rounded-3xl border border-white/35 bg-white/55 p-6 shadow-2xl backdrop-blur-lg text-white animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedSchedule(null)}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 transition"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="mb-4">
+              <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                仮日程プラン - カレンダー表示
+              </h2>
+              {selectedSchedule.shipDate && (
+                <div className="mt-3 p-3 rounded-2xl bg-cyan-500/30 border-2 border-cyan-400/50">
+                  <div className="text-base font-semibold text-cyan-100">📅 仮納期（出荷予定日）</div>
+                  <div className="text-2xl font-bold text-white mt-1">
+                    {format(parse(selectedSchedule.shipDate, "yyyy-MM-dd", new Date()), "yyyy年MM月dd日（E）", { locale: ja })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <CalendarView 
+              schedule={selectedSchedule.schedule} 
+              shipDate={selectedSchedule.shipDate}
+              onScheduleUpdate={(updatedSchedule) => {
+                setSelectedSchedule({ ...selectedSchedule, schedule: updatedSchedule })
+                // メッセージも更新
+                if (selectedSchedule.messageId) {
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === selectedSchedule.messageId
+                        ? { ...m, schedule: updatedSchedule }
+                        : m
+                    )
+                  )
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// カレンダー表示コンポーネント
+function CalendarView({ 
+  schedule, 
+  shipDate,
+  onScheduleUpdate 
+}: { 
+  schedule: ScheduleBlock[]
+  shipDate?: string
+  onScheduleUpdate?: (updatedSchedule: ScheduleBlock[]) => void
+}) {
+  // スケジュールから日付を抽出
+  const parseScheduleDate = (timeFrame: string): Date | null => {
+    // "11/11 夜" や "11/13 午前" のような形式をパース
+    const match = timeFrame.match(/(\d{1,2})\/(\d{1,2})/)
+    if (!match) return null
+    const [, month, day] = match
+    // 2025年を基準とする（スケジュールデータが2025年を前提としているため）
+    const year = 2025
+    return new Date(year, parseInt(month) - 1, parseInt(day))
+  }
+
+  // スケジュールを日付でグループ化
+  const scheduleByDate = new Map<string, ScheduleBlock[]>()
+  schedule.forEach((block) => {
+    const date = parseScheduleDate(block.timeFrame)
+    if (date) {
+      const dateKey = format(date, "yyyy-MM-dd")
+      if (!scheduleByDate.has(dateKey)) {
+        scheduleByDate.set(dateKey, [])
+      }
+      scheduleByDate.get(dateKey)!.push(block)
+    }
+  })
+
+  // カレンダー表示用の日付範囲を決定
+  const allDates = Array.from(scheduleByDate.keys())
+    .map((d) => parse(d, "yyyy-MM-dd", new Date()))
+    .filter((d) => !isNaN(d.getTime()))
+  
+  if (allDates.length === 0) {
+    return <div className="text-white">スケジュール情報がありません</div>
+  }
+
+  const minDate = new Date(Math.min(...allDates.map((d) => d.getTime())))
+  const maxDate = new Date(Math.max(...allDates.map((d) => d.getTime())))
+  
+  // 納期日も含める
+  if (shipDate) {
+    const shipDateObj = parse(shipDate, "yyyy-MM-dd", new Date())
+    if (shipDateObj.getTime() > maxDate.getTime()) {
+      maxDate.setTime(shipDateObj.getTime())
+    }
+    if (shipDateObj.getTime() < minDate.getTime()) {
+      minDate.setTime(shipDateObj.getTime())
+    }
+  }
+
+  // カレンダーの開始日と終了日（月の最初と最後）
+  const startDate = startOfMonth(minDate)
+  const endDate = endOfMonth(maxDate)
+  const days = eachDayOfInterval({ start: startDate, end: endDate })
+
+  // 週の開始日（月曜日）
+  const weekStart = startDate.getDay() === 0 ? 6 : startDate.getDay() - 1
+  const emptyDays = Array.from({ length: weekStart }, (_, i) => i)
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "確定":
+        return "bg-emerald-400/40 border-emerald-400/60"
+      case "調整中":
+        return "bg-amber-400/40 border-amber-400/60"
+      case "要確認":
+        return "bg-rose-400/40 border-rose-400/60"
+      default:
+        return "bg-white/20 border-white/30"
+    }
+  }
+
+  const [hoveredBlock, setHoveredBlock] = useState<string | null>(null)
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="min-w-[500px]">
+        {/* 曜日ヘッダー */}
+        <div className="grid grid-cols-7 gap-1.5 mb-3">
+          {["月", "火", "水", "木", "金", "土", "日"].map((day) => (
+            <div key={day} className="text-center text-xs font-semibold text-white/80 py-1">
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* カレンダーグリッド */}
+        <div className="grid grid-cols-7 gap-1.5">
+          {/* 空のセル（週の開始位置調整） */}
+          {emptyDays.map((_, i) => (
+            <div key={`empty-${i}`} className="aspect-square" />
+          ))}
+
+          {/* 日付セル */}
+          {days.map((day) => {
+            const dateKey = format(day, "yyyy-MM-dd")
+            const daySchedule = scheduleByDate.get(dateKey) || []
+            const isShipDate = shipDate === dateKey
+            const isToday = isSameDay(day, new Date())
+            const isPast = day < new Date() && !isSameDay(day, new Date())
+
+            return (
+              <div
+                key={dateKey}
+                className={`aspect-square rounded-lg border-2 p-1.5 ${
+                  isShipDate
+                    ? "bg-cyan-500/50 border-cyan-400 ring-2 ring-cyan-300/50"
+                    : isToday
+                      ? "bg-blue-500/30 border-blue-400/50"
+                      : isPast
+                        ? "bg-white/10 border-white/20"
+                        : "bg-white/20 border-white/30"
+                }`}
+              >
+                <div className="flex flex-col h-full">
+                  <div className={`text-[10px] font-semibold mb-0.5 ${isShipDate ? "text-cyan-100" : "text-white"}`}>
+                    {format(day, "d")}
+                  </div>
+                  <div className="flex-1 overflow-y-auto space-y-0.5">
+                    {isShipDate && (
+                      <div className="text-[9px] font-bold text-cyan-100 bg-cyan-600/50 px-1 py-0.5 rounded">
+                        納期
+                      </div>
+                    )}
+                    {daySchedule.map((block) => (
+                      <div
+                        key={block.id}
+                        className="relative group"
+                        onMouseEnter={() => setHoveredBlock(block.id)}
+                        onMouseLeave={() => setHoveredBlock(null)}
+                      >
+                        <div
+                          className={`text-[9px] px-1 py-0.5 rounded border cursor-pointer ${getStatusColor(block.status)}`}
+                          title={`${block.focus} - ${block.owner}`}
+                        >
+                          <div className="font-semibold truncate">{block.focus}</div>
+                          <div className="text-[8px] opacity-80">{block.timeFrame.split(" ")[1] || ""}</div>
+                        </div>
+                        {hoveredBlock === block.id && (
+                          <div className="absolute z-10 top-full left-0 mt-1 w-48 p-2 rounded-lg bg-white/90 backdrop-blur-lg border border-white/30 shadow-xl text-black">
+                            <div className="text-xs font-semibold mb-1">{block.focus}</div>
+                            <div className="text-[10px] text-gray-600 mb-2">
+                              {block.timeFrame} / 担当: {block.owner}
+                            </div>
+                            <div className="text-[10px] text-gray-700 mb-2">{block.note}</div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* 凡例 */}
+        <div className="mt-6 flex flex-wrap gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-cyan-500/50 border-2 border-cyan-400" />
+            <span>納期（出荷予定日）</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-emerald-400/40 border border-emerald-400/60" />
+            <span>確定</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-amber-400/40 border border-amber-400/60" />
+            <span>調整中</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-rose-400/40 border border-rose-400/60" />
+            <span>要確認</span>
+          </div>
+        </div>
+
+        {/* 確定ボタン（右下） */}
+        {schedule.some((b) => b.status !== "確定") && onScheduleUpdate && (
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={() => {
+                const updatedSchedule = schedule.map((b) => ({ ...b, status: "確定" as const }))
+                onScheduleUpdate(updatedSchedule)
+              }}
+              className="px-6 py-3 text-base font-semibold rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg transition hover:shadow-xl"
+            >
+              すべて確定する
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
