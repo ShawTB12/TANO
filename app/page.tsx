@@ -25,7 +25,6 @@ const SUGGESTED_PROMPTS = [
   "案件名: 4CBTY2 8台で出荷シミュレーション",
   "4CBTYK4 を至急案件として4台で評価して",
   "案件名: 3CB5 5台 / 製造負荷を前提に提案して",
-  "案件名: 4CBM10 6台 / 代替案も比較して",
 ]
 
 const SAMPLE_THREADS = [
@@ -906,44 +905,63 @@ const buildSimulationResponse = (projectName: string, quantity?: number) => {
 
   const lines = [
     `案件名: ${projectName}`,
+    "",
     `参照テンプレート: ${
       simulation.matchedKey === "default" ? "標準プロファイル（案件登録推奨）" : simulation.matchedKey
     }`,
-    `優先度: ${simulation.priority} / リクエスト数量: ${formatNumber(requestedQuantity)}台`,
+    `優先度: ${simulation.priority}  /  リクエスト数量: ${formatNumber(requestedQuantity)}台`,
     diffLine,
     "",
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    "",
     "■ 自動参照スナップショット",
-    `・コンセプトLT: ${conceptLT.variant}（${conceptLT.days}日） - ${conceptLT.reason}`,
-    `・在庫: ${inventory.sku} / 利用可能 ${formatNumber(inventory.available)}台（予約 ${formatNumber(
-      inventory.reserved,
-    )}台） - ${inventory.comment}`,
-    `・製造負荷: ${productionLoad.line} / 稼働率 ${productionLoad.utilization}%（${productionLoad.severity}） - ${productionLoad.comment}`,
+    "",
+    `【コンセプトLT】`,
+    `  ${conceptLT.variant}（${conceptLT.days}日） - ${conceptLT.reason}`,
+    "",
+    `【在庫】`,
+    `  SKU: ${inventory.sku}  /  利用可能: ${formatNumber(inventory.available)}台（予約: ${formatNumber(inventory.reserved)}台）`,
+    `  ${inventory.comment}`,
+    "",
+    `【製造負荷】`,
+    `  ライン: ${productionLoad.line}  /  稼働率: ${productionLoad.utilization}%（${productionLoad.severity}）`,
+    `  ${productionLoad.comment}`,
+    "",
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
     "",
     "■ 出荷プラン",
-    `◎ 最短案 | ${primaryPlan.label}`,
-    `  出荷日: ${primaryPlan.shipDate} / LT ${primaryPlan.leadTimeDays}日`,
-    `  アロケーション: ${primaryPlan.allocation}`,
-    `  製造ウィンドウ: ${primaryPlan.manufacturingWindow}`,
-    `  リスク: ${primaryPlan.risk}`,
-    `  メモ: ${primaryPlan.note}`,
+    "",
+    `◎ 最短案  |  ${primaryPlan.label}`,
+    "",
+    `  📅 出荷日: ${primaryPlan.shipDate}  /  LT: ${primaryPlan.leadTimeDays}日`,
+    `  📦 アロケーション: ${primaryPlan.allocation}`,
+    `  🏭 製造ウィンドウ: ${primaryPlan.manufacturingWindow}`,
+    `  ⚠️  リスク: ${primaryPlan.risk}`,
+    `  📝 メモ: ${primaryPlan.note}`,
   ]
 
   alternativePlans.forEach((plan, index) => {
     lines.push(
       "",
-      `▲ 代替案${index + 1} | ${plan.label}`,
-      `  出荷日: ${plan.shipDate} / LT ${plan.leadTimeDays}日`,
-      `  アロケーション: ${plan.allocation}`,
-      `  製造ウィンドウ: ${plan.manufacturingWindow}`,
-      `  リスク: ${plan.risk}`,
-      `  メモ: ${plan.note}`,
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "",
+      `▲ 代替案${index + 1}  |  ${plan.label}`,
+      "",
+      `  📅 出荷日: ${plan.shipDate}  /  LT: ${plan.leadTimeDays}日`,
+      `  📦 アロケーション: ${plan.allocation}`,
+      `  🏭 製造ウィンドウ: ${plan.manufacturingWindow}`,
+      `  ⚠️  リスク: ${plan.risk}`,
+      `  📝 メモ: ${plan.note}`,
     )
   })
 
   lines.push(
     "",
-    `補足: ${REFERENCE_NOTE}`,
-    "意思決定: 最短案で承認 / 代替案に切替 / 条件を修正 のいずれかをご指示ください。",
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    "",
+    `📌 補足: ${REFERENCE_NOTE}`,
+    "",
+    `💡 意思決定: 最短案で承認  /  代替案に切替  /  条件を修正 のいずれかをご指示ください。`,
   )
 
   return {
@@ -1063,7 +1081,7 @@ export default function Home() {
         setIsScanning(false)
       }
       setIsGenerating(false)
-    }, 750 + Math.random() * 600)
+    }, 3000)
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -1183,7 +1201,7 @@ export default function Home() {
                 >
                   <div className={`flex flex-col gap-3 ${containerWidth} ${isAssistant ? "items-start" : "items-end"}`}>
                     <div
-                      className={`w-full rounded-3xl px-6 py-5 text-base leading-relaxed shadow-xl ${
+                      className={`w-full rounded-3xl px-6 py-5 text-base leading-relaxed shadow-xl whitespace-pre-wrap ${
                         isAssistant
                           ? "bg-white/55 text-white backdrop-blur-lg border border-white/35"
                           : "bg-cyan-500/90 text-white"
@@ -1300,7 +1318,7 @@ export default function Home() {
                 onChange={(event) => setInputValue(event.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="案件名と数量を入力（例: 案件名: ユニカ_AZ-145 480台）"
-                className="h-32 flex-1 resize-none bg-transparent text-base text-white placeholder:text-white/85 focus:outline-none"
+                className="h-8 flex-1 resize-none bg-transparent text-base text-white placeholder:text-white/85 focus:outline-none"
                 disabled={isGenerating}
               />
               <button
