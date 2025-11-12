@@ -11,6 +11,8 @@ interface Message {
   id: string
   role: Role
   content: string
+  history?: SimilarCase[]
+  schedule?: ScheduleBlock[]
 }
 
 const INTRO_MESSAGE =
@@ -65,11 +67,31 @@ interface SimulationPlan {
   note: string
 }
 
+interface SimilarCase {
+  id: string
+  title: string
+  period: string
+  quantity: number
+  approach: string
+  outcome: string
+}
+
+interface ScheduleBlock {
+  id: string
+  timeFrame: string
+  focus: string
+  owner: string
+  status: "確定" | "調整中" | "要確認"
+  note: string
+}
+
 interface SimulationProfile {
   defaultQuantity: number
   priority: "通常" | "至急" | "試作"
   references: ReferenceSnapshot
   plans: SimulationPlan[]
+  history: SimilarCase[]
+  schedule: ScheduleBlock[]
 }
 
 const REFERENCE_NOTE =
@@ -118,6 +140,94 @@ const SIMULATION_LIBRARY: Record<string, SimulationProfile> = {
         note: "在庫は維持できるが納期は若干延伸。",
       },
     ],
+    history: [
+      {
+        id: "H-4CBTY2-01",
+        title: "4CBTY2 10台 / 春季即応",
+        period: "2025年4月",
+        quantity: 10,
+        approach: "在庫7台 + 夜勤で3台増産して前倒し",
+        outcome: "LTを2日短縮。夜勤コスト4%増で許容範囲。",
+      },
+      {
+        id: "H-4CBTY2-02",
+        title: "4CBTY2 6台 / 緊急保守案件",
+        period: "2024年12月",
+        quantity: 6,
+        approach: "在庫全振り＋翌週の補充ロットを先行手配",
+        outcome: "在庫リスク最小で顧客SLAを維持。",
+      },
+    ],
+    schedule: [
+      {
+        id: "S-4CBTY2-01",
+        timeFrame: "11/11 夜",
+        focus: "筐体組立 2台増産",
+        owner: "L2夜勤リーダー",
+        status: "調整中",
+        note: "人員確保済み。QAリソースを追加割当。",
+      },
+      {
+        id: "S-4CBTY2-02",
+        timeFrame: "11/13 午前",
+        focus: "最終QA・外観検査",
+        owner: "品質保証チーム",
+        status: "確定",
+        note: "チェックリストは最新版#2025-10を使用。",
+      },
+      {
+        id: "S-4CBTY2-03",
+        timeFrame: "11/14 夕方",
+        focus: "梱包・出荷便手配",
+        owner: "SCMオペレーション",
+        status: "要確認",
+        note: "輸送会社と前日17時までに集荷確定が必要。",
+      },
+    ],
+    history: [
+      {
+        id: "H-3CB5-01",
+        title: "3CB5 7台 / メンテ補充",
+        period: "2025年3月",
+        quantity: 7,
+        approach: "在庫全引当＋翌週補充で対応",
+        outcome: "保守窓口への連絡を前倒しし顧客満足度維持。",
+      },
+      {
+        id: "H-3CB5-02",
+        title: "3CB5 4台 / 部材遅延時",
+        period: "2024年6月",
+        quantity: 4,
+        approach: "代替ロットを振替えQAを追加で1日実施",
+        outcome: "品質リスクゼロ、コスト増2%で抑制。",
+      },
+    ],
+    schedule: [
+      {
+        id: "S-3CB5-01",
+        timeFrame: "11/11 午前",
+        focus: "在庫即時引当",
+        owner: "需給オペレーション",
+        status: "確定",
+        note: "システム登録済み。補充ロットは11/18入庫。",
+      },
+      {
+        id: "S-3CB5-02",
+        timeFrame: "11/12 午前",
+        focus: "QAスポットチェック",
+        owner: "QAチーム",
+        status: "確定",
+        note: "サンプル抜き取り率20%。",
+      },
+      {
+        id: "S-3CB5-03",
+        timeFrame: "11/13 午後",
+        focus: "出荷ドキュメント作成",
+        owner: "SCMオペレーション",
+        status: "要確認",
+        note: "輸出仕様書の更新が必要。法務確認待ち。",
+      },
+    ],
   },
   "4CBTYK4": {
     defaultQuantity: 4,
@@ -159,6 +269,50 @@ const SIMULATION_LIBRARY: Record<string, SimulationProfile> = {
         manufacturingWindow: "11/12〜11/13 夜間で1台増産",
         risk: "増産分のQAが翌日にずれ込む可能性あり。",
         note: "予約在庫を1台残せるため他案件影響が小さい。",
+      },
+    ],
+    history: [
+      {
+        id: "H-4CBTYK4-01",
+        title: "4CBTYK4 5台 / 現地保守向け",
+        period: "2025年7月",
+        quantity: 5,
+        approach: "予約在庫を解放しつつ夜間シフトでQA前倒し",
+        outcome: "顧客サイト稼働停止を回避。評価◎。",
+      },
+      {
+        id: "H-4CBTYK4-02",
+        title: "4CBTYK4 3台 / 北米向け特急",
+        period: "2024年11月",
+        quantity: 3,
+        approach: "試験在庫を流用し航空便で即納体制",
+        outcome: "輸送費8%増だがSLA違反を回避。",
+      },
+    ],
+    schedule: [
+      {
+        id: "S-4CBTYK4-01",
+        timeFrame: "11/12 午後",
+        focus: "予約在庫の差替え承認",
+        owner: "CSプランナー",
+        status: "調整中",
+        note: "顧客B案件との優先度調整が必要。",
+      },
+      {
+        id: "S-4CBTYK4-02",
+        timeFrame: "11/12 夜",
+        focus: "追加QA（信頼性試験）",
+        owner: "品質保証チーム",
+        status: "確定",
+        note: "夜間QAの担当者割当済み。",
+      },
+      {
+        id: "S-4CBTYK4-03",
+        timeFrame: "11/13 午前",
+        focus: "輸送便手配・書類更新",
+        owner: "ロジ担当",
+        status: "要確認",
+        note: "航空便の枠確保が条件。AM9:00期限。",
       },
     ],
   },
@@ -204,6 +358,50 @@ const SIMULATION_LIBRARY: Record<string, SimulationProfile> = {
         note: "月末の需要ピークに備えたい場合に適合。",
       },
     ],
+    history: [
+      {
+        id: "H-4CBT2-01",
+        title: "4CBT2 8台 / 量産立ち上げ前倒し",
+        period: "2025年1月",
+        quantity: 8,
+        approach: "在庫4台 + 追加増産4台を分割手配",
+        outcome: "ライン負荷平準化と在庫維持を両立。",
+      },
+      {
+        id: "H-4CBT2-02",
+        title: "4CBT2 5台 / 部材不足時対応",
+        period: "2024年9月",
+        quantity: 5,
+        approach: "代替部材を使用しQA工程を延長",
+        outcome: "出荷2日遅延も顧客合意済み。品質問題なし。",
+      },
+    ],
+    schedule: [
+      {
+        id: "S-4CBT2-01",
+        timeFrame: "11/11 午後",
+        focus: "在庫引当と補充ロット登録",
+        owner: "需給管理",
+        status: "確定",
+        note: "WMS反映済み。補充は11/20着予定。",
+      },
+      {
+        id: "S-4CBT2-02",
+        timeFrame: "11/12〜11/13",
+        focus: "追加2台の組立",
+        owner: "L3日勤リーダー",
+        status: "調整中",
+        note: "作業手順書Rev.12を使用。人員割当未確定。",
+      },
+      {
+        id: "S-4CBT2-03",
+        timeFrame: "11/14 午前",
+        focus: "QA・最終検査",
+        owner: "QAチーム",
+        status: "要確認",
+        note: "過去不具合の振返り項目を追加確認。",
+      },
+    ],
   },
   "4CBT3": {
     defaultQuantity: 7,
@@ -247,6 +445,50 @@ const SIMULATION_LIBRARY: Record<string, SimulationProfile> = {
         note: "夜勤対応が難しい場合の安全策。",
       },
     ],
+    history: [
+      {
+        id: "H-4CBT3-01",
+        title: "4CBT3 9台 / 大型案件前倒し",
+        period: "2025年6月",
+        quantity: 9,
+        approach: "夜勤3枠を追加し制御基板を先行調整",
+        outcome: "顧客立会い前にバッファ2日確保。",
+      },
+      {
+        id: "H-4CBT3-02",
+        title: "4CBT3 4台 / 短納期部品振替",
+        period: "2024年11月",
+        quantity: 4,
+        approach: "他ラインの余剰在庫を流用しQA強化",
+        outcome: "品質評価◎、CTQ項目ゼロ不具合。",
+      },
+    ],
+    schedule: [
+      {
+        id: "S-4CBT3-01",
+        timeFrame: "11/12 夜",
+        focus: "制御基板調整 2台",
+        owner: "L4夜勤SV",
+        status: "調整中",
+        note: "夜勤メンバーの超過勤務承認が必要。",
+      },
+      {
+        id: "S-4CBT3-02",
+        timeFrame: "11/13 午後",
+        focus: "ファームウェア焼き付け・検証",
+        owner: "ソフトQA",
+        status: "確定",
+        note: "バージョン1.2.6を展開予定。",
+      },
+      {
+        id: "S-4CBT3-03",
+        timeFrame: "11/15 午前",
+        focus: "最終組立＆梱包",
+        owner: "L4日勤",
+        status: "要確認",
+        note: "大型案件とのライン共有を事前調整。",
+      },
+    ],
   },
   "4CBTK4": {
     defaultQuantity: 5,
@@ -288,6 +530,50 @@ const SIMULATION_LIBRARY: Record<string, SimulationProfile> = {
         manufacturingWindow: "11/12〜11/17 逐次検証",
         risk: "納期は延びるが確認粒度が上がる。",
         note: "顧客レビュー前に精度を高めたい場合に推奨。",
+      },
+    ],
+    history: [
+      {
+        id: "H-4CBTK4-01",
+        title: "4CBTK4 6台 / 試作検証サイクル",
+        period: "2025年5月",
+        quantity: 6,
+        approach: "在庫5台 + 追加1台で逐次評価、QA延長",
+        outcome: "検証リードタイム-20%。品質指摘ゼロ。",
+      },
+      {
+        id: "H-4CBTK4-02",
+        title: "4CBTK4 4台 / 技術評価チーム案件",
+        period: "2024年8月",
+        quantity: 4,
+        approach: "評価工程を3日延ばし成果物に反映",
+        outcome: "顧客満足度向上。次期案件に繋がる。",
+      },
+    ],
+    schedule: [
+      {
+        id: "S-4CBTK4-01",
+        timeFrame: "11/12 午前",
+        focus: "試作セル手配・治具事前チェック",
+        owner: "試作セル管理者",
+        status: "確定",
+        note: "治具セットは前日夜に完了予定。",
+      },
+      {
+        id: "S-4CBTK4-02",
+        timeFrame: "11/13〜11/14",
+        focus: "追加QA＋検証ログ取得",
+        owner: "テクニカルQA",
+        status: "調整中",
+        note: "ログフォーマットRev.4.2を使用。",
+      },
+      {
+        id: "S-4CBTK4-03",
+        timeFrame: "11/15 午後",
+        focus: "評価レビュー・顧客共有資料作成",
+        owner: "プロジェクト担当",
+        status: "要確認",
+        note: "顧客レビュー会議 11/16 10:00予定。",
       },
     ],
   },
@@ -376,6 +662,50 @@ const SIMULATION_LIBRARY: Record<string, SimulationProfile> = {
         note: "緊急案件とのバッファを残したい場合に。",
       },
     ],
+    history: [
+      {
+        id: "H-3CB10-01",
+        title: "3CB10 9台 / 大型案件サポート",
+        period: "2025年2月",
+        quantity: 9,
+        approach: "在庫6台 + 日勤3台で段階対応",
+        outcome: "物流再調整でコスト+5%も顧客満足度◎。",
+      },
+      {
+        id: "H-3CB10-02",
+        title: "3CB10 6台 / 物流制約時",
+        period: "2024年10月",
+        quantity: 6,
+        approach: "在庫分だけ先行出荷、残りを翌週便",
+        outcome: "納期SLAを維持しリスクを低減。",
+      },
+    ],
+    schedule: [
+      {
+        id: "S-3CB10-01",
+        timeFrame: "11/12 午後",
+        focus: "フォークリフト手配・搬送計画",
+        owner: "物流チーム",
+        status: "調整中",
+        note: "夜間搬送不可。日勤リソース調整中。",
+      },
+      {
+        id: "S-3CB10-02",
+        timeFrame: "11/13〜11/14",
+        focus: "大型梱包・補強検査",
+        owner: "L6日勤",
+        status: "確定",
+        note: "梱包材#L6-2025を優先使用。",
+      },
+      {
+        id: "S-3CB10-03",
+        timeFrame: "11/17 午前",
+        focus: "輸送便最終確定",
+        owner: "SCMロジ",
+        status: "要確認",
+        note: "翌週便差替え時は顧客承認が必要。",
+      },
+    ],
   },
   "4CBM10": {
     defaultQuantity: 6,
@@ -419,6 +749,50 @@ const SIMULATION_LIBRARY: Record<string, SimulationProfile> = {
         note: "顧客都合で部分納入が許容される場合の選択肢。",
       },
     ],
+    history: [
+      {
+        id: "H-4CBM10-01",
+        title: "4CBM10 7台 / 定期メンテ補充",
+        period: "2025年5月",
+        quantity: 7,
+        approach: "在庫5台 + 夜勤で2台増産",
+        outcome: "LTを1日短縮し現場稼働を維持。",
+      },
+      {
+        id: "H-4CBM10-02",
+        title: "4CBM10 5台 / 分割納入対応",
+        period: "2024年11月",
+        quantity: 5,
+        approach: "在庫4台先行出荷、残1台を翌便",
+        outcome: "輸送コスト+6%も顧客満足度改善。",
+      },
+    ],
+    schedule: [
+      {
+        id: "S-4CBM10-01",
+        timeFrame: "11/12 夜",
+        focus: "モーター調整・1台増産",
+        owner: "L3夜勤リーダー",
+        status: "調整中",
+        note: "調整治具の校正を11/12 18時に実施予定。",
+      },
+      {
+        id: "S-4CBM10-02",
+        timeFrame: "11/14 午前",
+        focus: "品質確認・振動試験",
+        owner: "品質保証チーム",
+        status: "確定",
+        note: "振動試験プロファイル#VG-7を使用。",
+      },
+      {
+        id: "S-4CBM10-03",
+        timeFrame: "11/15 午後",
+        focus: "部分出荷の輸送手配",
+        owner: "SCMオペレーション",
+        status: "要確認",
+        note: "顧客と受入時間帯の最終確認を実施。",
+      },
+    ],
   },
 }
 
@@ -453,6 +827,26 @@ const DEFAULT_SIMULATION: SimulationProfile = {
       manufacturingWindow: "標準LTに基づく自動スケジュール",
       risk: "前提情報が不足。担当者レビュー推奨。",
       note: "案件登録後に再計算してください。",
+    },
+  ],
+  history: [
+    {
+      id: "H-DEFAULT-01",
+      title: "標準テンプレ 5台 / 仮シミュレーション",
+      period: "参考",
+      quantity: 5,
+      approach: "在庫3台 + 新規2台での標準対応",
+      outcome: "案件登録後に詳細を再確認してください。",
+    },
+  ],
+  schedule: [
+    {
+      id: "S-DEFAULT-01",
+      timeFrame: "未確定",
+      focus: "案件詳細の登録",
+      owner: "担当営業",
+      status: "要確認",
+      note: "型番・構成情報をシステム登録後に再計算します。",
     },
   ],
 }
@@ -497,7 +891,7 @@ const extractOrderInfo = (
   }
 }
 
-const buildSimulationNarrative = (projectName: string, quantity?: number) => {
+const buildSimulationResponse = (projectName: string, quantity?: number) => {
   const simulation = simulateShipment(projectName)
   const requestedQuantity = quantity ?? simulation.defaultQuantity
   const diff = quantity ? quantity - simulation.defaultQuantity : 0
@@ -552,7 +946,11 @@ const buildSimulationNarrative = (projectName: string, quantity?: number) => {
     "意思決定: 最短案で承認 / 代替案に切替 / 条件を修正 のいずれかをご指示ください。",
   )
 
-  return lines.join("\n")
+  return {
+    narrative: lines.join("\n"),
+    history: simulation.history,
+    schedule: simulation.schedule,
+  }
 }
 
 const GUIDANCE_MESSAGE =
@@ -563,6 +961,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([{ id: "assistant-1", role: "assistant", content: "" }])
   const [inputValue, setInputValue] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isScanning, setIsScanning] = useState(false)
   const hasQueuedFollowUp = useRef(false)
   const responseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const chatEndRef = useRef<HTMLDivElement | null>(null)
@@ -625,6 +1024,7 @@ export default function Home() {
     if (!content) return
 
     const orderInfo = extractOrderInfo(content)
+    const hasValidProject = Boolean(orderInfo.projectName)
 
     const userMessage: Message = {
       id: `user-${Date.now()}`,
@@ -635,20 +1035,33 @@ export default function Home() {
     setMessages((prev) => [...prev, userMessage])
     setInputValue("")
     setIsGenerating(true)
+    setIsScanning(hasValidProject)
 
     responseTimeoutRef.current = setTimeout(() => {
-      const assistantContent = orderInfo.projectName
-        ? buildSimulationNarrative(orderInfo.projectName, orderInfo.quantity)
-        : GUIDANCE_MESSAGE
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `assistant-${Date.now()}`,
-          role: "assistant",
-          content: assistantContent,
-        },
-      ])
+      if (orderInfo.projectName) {
+        const assistantResponse = buildSimulationResponse(orderInfo.projectName, orderInfo.quantity)
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            role: "assistant",
+            content: assistantResponse.narrative,
+            history: assistantResponse.history,
+            schedule: assistantResponse.schedule,
+          },
+        ])
+        setIsScanning(false)
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            role: "assistant",
+            content: GUIDANCE_MESSAGE,
+          },
+        ])
+        setIsScanning(false)
+      }
       setIsGenerating(false)
     }, 750 + Math.random() * 600)
   }
@@ -669,28 +1082,28 @@ export default function Home() {
         className="object-cover"
         priority
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950/70 via-blue-900/60 to-cyan-900/40 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-blue-900/82 to-cyan-900/70 backdrop-blur-sm" />
 
       <header
         className={`absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-8 py-6 opacity-0 ${isLoaded ? "animate-fade-in" : ""}`}
         style={{ animationDelay: "0.15s" }}
       >
         <div className="flex items-center gap-4">
-          <Menu className="h-6 w-6 text-white/80" />
+          <Menu className="h-6 w-6 text-white/95" />
           <span className="text-2xl font-semibold text-white drop-shadow-lg">AgenticAI for Unica</span>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/90" />
             <input
               type="text"
               placeholder="案件・ドキュメントを検索"
-              className="rounded-full bg-white/10 backdrop-blur-sm pl-10 pr-4 py-2 text-white placeholder:text-white/70 border border-white/20 focus:outline-none focus:ring-2 focus:ring-white/30"
+              className="rounded-full bg-white/50 backdrop-blur-sm pl-10 pr-4 py-2.5 text-base text-white placeholder:text-white/90 border border-white/35 focus:outline-none focus:ring-2 focus:ring-white/45"
             />
           </div>
-          <Settings className="h-6 w-6 text-white/80 drop-shadow-md" />
-          <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold shadow-md">
+          <Settings className="h-6 w-6 text-white/95 drop-shadow-md" />
+          <div className="h-10 w-10 rounded-full bg-white/40 flex items-center justify-center text-white font-semibold shadow-md">
             LG
           </div>
         </div>
@@ -698,24 +1111,24 @@ export default function Home() {
 
       <main className="relative h-screen w-full pt-20 flex">
         <aside
-          className={`w-72 h-full bg-white/10 backdrop-blur-lg px-5 py-6 shadow-xl border-r border-white/10 rounded-tr-3xl opacity-0 ${
+          className={`w-72 h-full bg-white/50 backdrop-blur-lg px-5 py-6 shadow-xl border-r border-white/30 rounded-tr-3xl opacity-0 ${
             isLoaded ? "animate-fade-in" : ""
           } flex flex-col`}
           style={{ animationDelay: "0.3s" }}
         >
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold tracking-wide text-white/80 uppercase">案件シミュレーション履歴</h2>
-            <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25">
+            <h2 className="text-base font-semibold tracking-wide text-white uppercase">案件シミュレーション履歴</h2>
+            <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/50 text-white transition hover:bg-white/60">
               <Plus className="h-4 w-4" />
             </button>
           </div>
 
           <div className="relative mt-5">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/60" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white" />
             <input
               type="text"
               placeholder="案件を検索"
-              className="w-full rounded-xl bg-white/10 px-10 py-2 text-sm text-white placeholder:text-white/50 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
+              className="w-full rounded-xl bg-white/40 px-10 py-2.5 text-base text-white placeholder:text-white/85 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/40"
             />
           </div>
 
@@ -723,64 +1136,127 @@ export default function Home() {
             {SAMPLE_THREADS.map((thread) => (
               <button
                 key={thread.id}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-white/80 transition hover:border-white/30 hover:bg-white/15"
+                className="w-full rounded-2xl border border-white/30 bg-white/35 px-4 py-3.5 text-left text-base text-white transition hover:border-white/45 hover:bg-white/50"
               >
-                <div className="flex items-center gap-2 text-white/70">
+                <div className="flex items-center gap-2 text-white">
                   <MessageSquare className="h-4 w-4" />
-                  <span className="text-xs">{thread.timestamp}</span>
+                  <span className="text-sm">{thread.timestamp}</span>
                 </div>
-                <div className="mt-1 font-medium text-white">{thread.title}</div>
+                <div className="mt-1.5 font-medium text-white">{thread.title}</div>
               </button>
             ))}
           </div>
         </aside>
 
         <section
-          className={`flex-1 flex flex-col opacity-0 ${isLoaded ? "animate-fade-in" : ""}`}
+          className={`relative flex-1 flex flex-col opacity-0 ${isLoaded ? "animate-fade-in" : ""}`}
           style={{ animationDelay: "0.45s" }}
         >
-          <div className="flex items-center justify-between border-b border-white/10 px-8 py-6">
+          <div className="flex items-center justify-between border-b border-white/30 px-8 py-6">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 shadow-lg">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/50 shadow-lg">
                 <Sparkles className="h-6 w-6 text-cyan-200" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-white">AgenticAI for Unica</h1>
-                <p className="text-sm text-white/70">納期回答自動支援モジュール</p>
+                <h1 className="text-2xl font-semibold text-white">AgenticAI for Unica</h1>
+                <p className="text-base text-white">納期回答自動支援モジュール</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs uppercase tracking-wider text-white/60">
+              <span className="rounded-full border border-white/35 bg-white/35 px-3 py-1.5 text-sm uppercase tracking-wider text-white">
                 UNICA
               </span>
-              <button className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm text-white transition hover:bg-white/20">
+              <button className="rounded-full border border-white/35 bg-white/40 px-4 py-2 text-base text-white transition hover:bg-white/50">
                 ステータス: 稼働中
               </button>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-8 py-8 space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.role === "assistant" ? "justify-start" : "justify-end"}`}
-              >
+            {messages.map((message) => {
+              const isAssistant = message.role === "assistant"
+              const containerWidth = isAssistant ? "max-w-[80%]" : "max-w-[68%]"
+              return (
                 <div
-                  className={`max-w-[68%] rounded-3xl px-5 py-4 text-sm leading-relaxed shadow-xl ${
-                    message.role === "assistant"
-                      ? "bg-white/15 text-white backdrop-blur-lg border border-white/10"
-                      : "bg-cyan-500/90 text-white"
-                  }`}
+                  key={message.id}
+                  className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}
                 >
-                  {message.content}
+                  <div className={`flex flex-col gap-3 ${containerWidth} ${isAssistant ? "items-start" : "items-end"}`}>
+                    <div
+                      className={`w-full rounded-3xl px-6 py-5 text-base leading-relaxed shadow-xl ${
+                        isAssistant
+                          ? "bg-white/55 text-white backdrop-blur-lg border border-white/35"
+                          : "bg-cyan-500/90 text-white"
+                      }`}
+                    >
+                      {message.content}
+                    </div>
+                    {isAssistant && message.history && message.history.length > 0 && (
+                      <div className="grid w-full gap-4 md:grid-cols-2">
+                        {message.history.map((caseItem) => (
+                          <div
+                            key={caseItem.id}
+                            className="w-full rounded-2xl border border-white/35 bg-white/45 p-5 text-base text-white shadow-lg backdrop-blur-lg"
+                          >
+                            <div className="text-sm uppercase tracking-wide text-cyan-200">
+                              {caseItem.period}
+                            </div>
+                            <div className="mt-2 text-lg font-semibold text-white">{caseItem.title}</div>
+                            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-white">
+                              <span className="rounded-full bg-white/40 px-3 py-1.5">
+                                数量 {formatNumber(caseItem.quantity)}台
+                              </span>
+                            </div>
+                            <p className="mt-4 text-sm text-white">アプローチ: {caseItem.approach}</p>
+                            <p className="mt-2 text-sm text-white">結果: {caseItem.outcome}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {isAssistant && message.schedule && message.schedule.length > 0 && (
+                      <div className="w-full rounded-2xl border border-white/35 bg-white/40 p-5 text-base text-white shadow-lg backdrop-blur-lg">
+                        <div className="text-sm font-semibold uppercase tracking-wider text-white">
+                          仮日程プラン
+                        </div>
+                        <div className="mt-4 space-y-3">
+                          {message.schedule.map((block) => (
+                            <div
+                              key={block.id}
+                              className="rounded-xl border border-white/35 bg-white/35 px-5 py-4"
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="text-base font-semibold text-white">{block.focus}</div>
+                                <span
+                                  className={`rounded-full px-3 py-1 text-xs font-medium ${
+                                    block.status === "確定"
+                                      ? "bg-emerald-400/40 text-emerald-100"
+                                      : block.status === "調整中"
+                                        ? "bg-amber-400/40 text-amber-100"
+                                        : "bg-rose-400/40 text-rose-100"
+                                  }`}
+                                >
+                                  {block.status}
+                                </span>
+                              </div>
+                              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-white">
+                                <span>{block.timeFrame}</span>
+                                <span>担当: {block.owner}</span>
+                              </div>
+                              <p className="mt-3 text-sm text-white">{block.note}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
 
             {isGenerating && (
               <div className="flex justify-start">
-                <div className="flex items-center gap-2 rounded-3xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white/80 shadow-lg backdrop-blur-lg">
-                  <Loader2 className="h-4 w-4 animate-spin text-cyan-200" />
+                <div className="flex items-center gap-3 rounded-3xl border border-white/35 bg-white/45 px-5 py-4 text-base text-white shadow-lg backdrop-blur-lg">
+                  <Loader2 className="h-5 w-5 animate-spin text-cyan-200" />
                   <span>AgenticAIが出荷シミュレーションを計算しています...</span>
                 </div>
               </div>
@@ -788,38 +1264,55 @@ export default function Home() {
             <div ref={chatEndRef} />
           </div>
 
+          {isScanning && (
+            <div className="pointer-events-none absolute bottom-36 right-12 z-30 w-[360px] rounded-3xl border border-cyan-300/60 bg-cyan-500/50 p-6 shadow-2xl backdrop-blur-lg">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-6 w-6 text-cyan-50 animate-spin" />
+                <p className="text-base font-medium text-white">過去の類似案件を調査します</p>
+              </div>
+              <p className="mt-3 text-sm text-white">
+                コンセプトLT・在庫・製造負荷の履歴を参照して最適な比較指標を抽出中です。
+              </p>
+              <div className="mt-4 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-cyan-100/80 animate-bounce" />
+                <span className="h-2 w-2 rounded-full bg-cyan-100/60 animate-bounce" style={{ animationDelay: "0.15s" }} />
+                <span className="h-2 w-2 rounded-full bg-cyan-100/40 animate-bounce" style={{ animationDelay: "0.3s" }} />
+              </div>
+            </div>
+          )}
+
           <div className="px-8 pb-10">
-            <div className="flex flex-wrap gap-2 pb-4">
+            <div className="flex flex-wrap gap-3 pb-4">
               {SUGGESTED_PROMPTS.map((prompt) => (
                 <button
                   key={prompt}
                   onClick={() => handleSend(prompt)}
-                  className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs text-white/80 transition hover:border-white/40 hover:bg-white/20"
+                  className="rounded-full border border-white/35 bg-white/40 px-5 py-2.5 text-sm text-white transition hover:border-white/50 hover:bg-white/50"
                 >
                   {prompt}
                 </button>
               ))}
             </div>
 
-            <div className="flex items-end gap-3 rounded-3xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-lg">
+            <div className="flex items-end gap-3 rounded-3xl border border-white/35 bg-white/50 p-5 shadow-2xl backdrop-blur-lg">
               <textarea
                 value={inputValue}
                 onChange={(event) => setInputValue(event.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="案件名と数量を入力（例: 案件名: ユニカ_AZ-145 480台）"
-                className="h-28 flex-1 resize-none bg-transparent text-sm text-white placeholder:text-white/60 focus:outline-none"
+                className="h-32 flex-1 resize-none bg-transparent text-base text-white placeholder:text-white/85 focus:outline-none"
                 disabled={isGenerating}
               />
               <button
                 onClick={() => handleSend()}
                 disabled={isGenerating || !inputValue.trim()}
-                className="mb-1 flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/90 text-white transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-white/20"
+                className="mb-1 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-500/90 text-white transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:bg-white/40"
                 aria-label="送信"
               >
-                <Send className="h-5 w-5" />
+                <Send className="h-6 w-6" />
               </button>
             </div>
-            <p className="mt-3 text-center text-xs text-white/60">
+            <p className="mt-4 text-center text-sm text-white">
               AgenticAIの提案はAIによる推論です。重要な意思決定は要確認のうえご利用ください。
             </p>
           </div>
