@@ -3,10 +3,6 @@ import OpenAI from "openai"
 import { PROFILE_DATA } from "@/lib/profile-data"
 import { SALESFORCE_DATA } from "@/lib/salesforce-data"
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
 // 田上本部長のシステムプロンプト
 const SYSTEM_PROMPT = `
 あなたは「田上（たのうえ）本部長」です。
@@ -49,14 +45,16 @@ export async function POST(req: Request) {
     // 将来的に "gpt-5.1" がリリースされた場合は、ここを更新してください
     // model = "gpt-4o" // デフォルトはコメントアウト
     // エラーハンドリングのため、一時的に gpt-3.5-turbo を使用するか、try-catch内でAPIキーの存在確認を行います
-    
-    if (!process.env.OPENAI_API_KEY) {
+
+    const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) {
       return NextResponse.json(
         { error: "OpenAI API Key not configured" },
         { status: 500 }
       )
     }
 
+    const openai = new OpenAI({ apiKey })
     const model = "gpt-4o" 
 
     // システムプロンプトをメッセージ履歴の先頭に追加
